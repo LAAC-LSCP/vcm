@@ -5,16 +5,19 @@ usage() {
     python $RUN_PATH --help | sed 's/vcm.py/vcm.sh/g'
     exit 1;
 }
+
+RUN_PATH='./src/vcm.py'
+
 INPUT_AUDIO_PATH=''
 INPUT_RTTM_PATH=''
 SMILEXTRACT_BIN_PATH=''
 OUTPUT_VCM_PATH=''
+AUDIO_EXTENSION=''
 ALL_CHILDREN=''
 KEEP_OTHER=''
 KEEP_TEMP=''
+N_JOBS=''
 REUSE_TEMP=''
-
-RUN_PATH='./src/vcm.py'
 
 # Arguments parser
 while [[ $# -gt 0 ]]; do
@@ -36,6 +39,16 @@ while [[ $# -gt 0 ]]; do
     ;;
     -o|--output-vcm-path)
     OUTPUT_VCM_PATH='--output-vcm-path '$2
+    shift
+    shift
+    ;;
+    -x|--audio-extension)
+    AUDIO_EXTENSION='--audio-extension '$2
+    shift
+    shift
+    ;;
+    -j|-J|--n-jobs)
+    N_JOBS='--n-jobs '$2
     shift
     shift
     ;;
@@ -71,4 +84,4 @@ if [[ -z $INPUT_AUDIO_PATH ]] | [[ -z $INPUT_RTTM_PATH ]] | [[ -z $SMILEXTRACT_B
 fi
 
 python $RUN_PATH --input-audio-path $INPUT_AUDIO_PATH --input-rttm-path $INPUT_RTTM_PATH --smilextract-bin-path $SMILEXTRACT_BIN_PATH \
-                 $OUTPUT_VCM_PATH $ALL_CHILDREN $KEEP_OTHER $KEEP_TEMP $REUSE_TEMP
+                 $OUTPUT_VCM_PATH $AUDIO_EXTENSION $ALL_CHILDREN $KEEP_OTHER $KEEP_TEMP $REUSE_TEMP $N_JOBS

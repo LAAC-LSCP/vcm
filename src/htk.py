@@ -151,4 +151,4 @@ class HTKFile:
                     self.data.append(frame)
 
             if "K" in self.qualifiers:
-                print("CRC checking not implememnted...")
+                print("CRC checking not implemented...")

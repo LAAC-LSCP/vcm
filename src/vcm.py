@@ -3,17 +3,21 @@ import sys
 import argparse
 import shutil
 import pickle
+from multiprocessing import Pool
+from multiprocessing import current_process
+from functools import partial
+from pprint import pprint
+
+import torch
 import numpy as np
 import tqdm
 
-import torch
-
 from model import load_model, CLASS_NAMES
 from htk import HTKFile
-from utils import seg_audio, extract_feature, read_text_file, dump_text_file
+from utils import seg_audio, extract_feature, read_text_file, dump_text_file, find_all_files, get_raw_filename
 
 SEP = ' '
-AUDIO_EXTENSION = "wav" # maybe use an argument to specify extension if there are some file that are not wave files
+AUDIO_EXTENSION = ".wav"
 LINE_PATTERN =  "SPEAKER {} 1 {} {} <NA> <NA> {} {:.2f} <NA>".replace(' ', SEP) # fn, onset, duration, vcm-class, conf
 
 TMP_DIR = os.path.join(os.path.dirname(__file__), '../tmp')
@@ -46,34 +50,36 @@ def predict_vcm(model, input, mean_var):
 
     return predition_vcm, prediction_confidence
 
-def _run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_path,
-            all_children=False, keep_other=False, reuse_temp=False, keep_temp=False):
-
-    # Load VCM model
-    vcm_model = load_model(VCM_NET_MODEL_PATH)
+def _run_vcm_rttm(vcm_model, smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_path,
+                  all_children, keep_other, reuse_temp, keep_temp):
+    # Output filename
+    if output_vcm_path is None:
+        assert input_rttm_path.endswith('.rttm')
+        output_vcm_path = input_rttm_path.replace('.rttm', '.vcm')
+    elif os.path.isdir(output_vcm_path):
+        output_vcm_path = os.path.join(output_vcm_path, os.path.basename(input_rttm_path).replace('.rttm', '.vcm'))
 
     vcm_predictions = []
     input_rttm_data = read_text_file(input_rttm_path)
 
     CHI_PATTERN = "CHI" if all_children else "KCHI"
 
-    for line in tqdm.tqdm(input_rttm_data):
+    current_process_ = current_process()
+    for line in tqdm.tqdm(input_rttm_data, position=current_process_._identity[0] + 1, leave=False):
         line = line.strip().split()
 
         file_name, onset, duration, speaker_type = line[1], line[3], line[4], line[7]
 
         # Do VCM prediction for children only
         if CHI_PATTERN in speaker_type:
-            temp_audio_filename = '{}_{}_{}.{}'.format(file_name, onset, duration, AUDIO_EXTENSION)
+            temp_audio_filename = '{}_{}_{}{}'.format(file_name, onset, duration, AUDIO_EXTENSION)
             temp_audio_path = os.path.join(TMP_DIR, temp_audio_filename)
-            temp_feature_path = temp_audio_path.replace(AUDIO_EXTENSION, 'htk')
-
-            # If input_rttm_path is all.rttm then input_audio_path is a directory
-            # Hence, we should append the filename we expect to find in that directory
-            if os.path.isdir(input_audio_path):
-                final_input_audio_path = os.path.join(input_audio_path, temp_audio_filename)
+            if AUDIO_EXTENSION != '':
+                temp_feature_path = temp_audio_path.replace(AUDIO_EXTENSION, '.htk')
             else:
-                final_input_audio_path = input_audio_path
+                temp_feature_path = temp_audio_path + '.htk'
+
+            final_input_audio_path = input_audio_path[file_name]
             assert os.path.isfile(final_input_audio_path), 'Error: audio file {} not found'.format(final_input_audio_path)
 
             # Segment audio file
@@ -118,15 +124,68 @@ def _run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm
     # Dump predictions
     dump_text_file(output_vcm_path, vcm_predictions)
 
-def run_vcm(*args, keep_temp=False, **kwargs):
+def _pool_run_vcm(input_rttm_path, **kwargs):
+    _run_vcm_rttm(input_rttm_path=input_rttm_path, **kwargs)
+
+def run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_path,
+            all_children=False, keep_other=False, reuse_temp=False, keep_temp=False, n_jobs=4):
+
     # Create temporary directory in VCM directory
     os.makedirs(TMP_DIR, exist_ok=True)
-    assert os.path.exists(TMP_DIR), 'Temporary directory {} not found.'.format(TMP_DIR)
 
+    # Check that the configuration files we need exist
+    assert os.access(smilextract_bin_path, os.X_OK), 'Path to OpenSMILE SMILExtract ({}) is not executable!'.format(smilextract_bin_path)
+    assert os.path.exists(TMP_DIR), 'Temporary directory {} not found.'.format(TMP_DIR)
+    assert os.path.isfile(MEAN_VAR), '{} not found (required by VCM model)'.format(MEAN_VAR)
+    assert os.path.isfile(VCM_NET_MODEL_PATH), 'Pytorch model {} not found.'.format(VCM_NET_MODEL_PATH)
+
+    # Wrapped everything in a try/finally block to clear tmp_dir is something goes wrong
     try:
-        _run_vcm(*args, keep_temp=keep_temp, **kwargs)
-    except Exception as e:
-        exit(e)
+        # The user can give either a path to a precise audio file or a path to a directory
+        if os.path.isdir(input_audio_path):     # List recursively all the files in the directory
+            audiofile_list = find_all_files(input_audio_path, AUDIO_EXTENSION)
+        elif os.path.isfile(input_audio_path):  # Just one file
+            audiofile_list = {get_raw_filename(input_audio_path): input_audio_path}
+        else:   # We should not get here
+            raise Exception("--input-audio-path is neither a file nor a directory.")
+
+        # The user can give either a path to a precise RTTM file or a path to a directory
+        if os.path.isdir(input_rttm_path):      # List recursively all the files in the directory
+            rttmfile_list = [v for _, v in find_all_files(input_rttm_path, '.rttm').items()]
+        elif os.path.isfile(input_rttm_path):   # Just one file
+            rttmfile_list = [input_rttm_path]
+        else:
+            raise Exception("--input-rttm-path is neither a file nor a directory.")
+
+        # Handle out directory/path: if the output directory does not exist: create it!
+        if output_vcm_path is not None and not os.path.exists(output_vcm_path):
+            os.makedirs(output_vcm_path, exist_ok=True)
+
+        # Load VCM model
+        vcm_model = load_model(VCM_NET_MODEL_PATH)
+
+        # Multiprocessing (does not work with multiple progress bars)
+        with Pool(n_jobs) as p:
+            arg_dict = dict(vcm_model=vcm_model, smilextract_bin_path=smilextract_bin_path,
+                        input_audio_path=audiofile_list, output_vcm_path=output_vcm_path, all_children=all_children,
+                        keep_other=keep_other, reuse_temp=reuse_temp, keep_temp=keep_temp)
+            f = partial(_pool_run_vcm, **arg_dict)
+            _ = list(tqdm.tqdm(p.imap_unordered(f, rttmfile_list), total=len(rttmfile_list), position=0))
+
+        # # Process RTTM files
+        # for final_input_rttm_path in tqdm.tqdm(rttmfile_list):
+        #     # Create output directory if necessary
+        #     if output_vcm_path is None:
+        #         assert final_input_rttm_path.endswith('.rttm')
+        #         final_output_vcm_path = final_input_rttm_path.replace('.rttm', '.vcm')
+        #     elif os.path.isdir(output_vcm_path):
+        #         final_output_vcm_path = os.path.join(output_vcm_path, os.path.basename(final_input_rttm_path).replace('.rttm', '.vcm'))
+        #     else:
+        #         raise Exception("--output-vcm-path is not a directory.")
+        #
+        #     # Run VCM
+        #     _run_vcm_rttm(vcm_model, smilextract_bin_path, audiofile_list, final_input_rttm_path, final_output_vcm_path,
+        #                   all_children=all_children, keep_other=keep_other, reuse_temp=reuse_temp, keep_temp=keep_temp)
     finally:
         # Remove temporary directory
         if not keep_temp:
@@ -142,6 +201,10 @@ def parse_arguments(argv):
                         help="Path to smilextract SMILExtract (v2.3) binary.")
     parser.add_argument("-o", "--output-vcm-path",
                         help="Output path were the results of the VCM should be stored. Default: Same as RTTM file.")
+    parser.add_argument("-x", "--audio-extension", default='.wav',
+                        help="Audio files file extension (no extension '' also accepted). Default: '.wav'")
+    parser.add_argument("-j", "-J", "--n-jobs", default=4, type=int,
+                        help="Number of parallel jobs to run.")
     parser.add_argument("--all-children", action='store_true',
                         help="Should speech segment produced by other children than the key child (KCHI)"
                              "should be analysed. Default: False")
@@ -163,31 +226,19 @@ if __name__ == '__main__':
 
     input_audio_path = args.input_audio_path
     input_rttm_path = args.input_rttm_path
+    output_vcm_path = args.output_vcm_path
     smilextract_bin_path = args.smilextract_bin_path
     all_children = args.all_children
     keep_other = args.keep_other
     keep_temp = args.keep_temp
     reuse_temp = args.reuse_temp
+    AUDIO_EXTENSION = args.audio_extension
+    n_jobs = args.n_jobs
 
-    # Create output directory if necessary
-    if args.output_vcm_path is None:
-        assert input_rttm_path.endswith('.rttm')
-        output_vcm_path = input_rttm_path.replace('.rttm', '.vcm')
-    else:
-        if not os.path.exists(args.output_vcm_path): os.makedirs(args.output_vcm_path, exist_ok=True)
-        output_vcm_path = os.path.join(args.output_vcm_path, os.path.basename(input_rttm_path))
+    # Add dot to the audio extension if forgotten by the user
+    if AUDIO_EXTENSION != '' and not AUDIO_EXTENSION.startswith('.'):
+        AUDIO_EXTENSION = '.' + AUDIO_EXTENSION
 
-
-    # Check that the provided path/files are okay
-    assert os.path.isfile(input_rttm_path), 'Input RTTM file not found.'
-    # If the RTTM file is a 'all.rttm' file we consider input_audio_path as a directory and not a file path
-    if os.path.basename(input_rttm_path) != 'all.rttm':
-        assert os.path.isfile(input_audio_path), 'Input audio file not found.'
-    else:
-        assert os.path.isdir(input_audio_path), 'Input audio path directory not found.'
-
-    assert os.path.isfile(MEAN_VAR), '{} not found (required by VCM model)'.format(MEAN_VAR)
-    assert os.path.isfile(VCM_NET_MODEL_PATH), 'Pytorch model {} not found.'.format(VCM_NET_MODEL_PATH)
-
-    run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_path, all_children, keep_other,
-            reuse_temp, keep_temp=keep_temp)
+    run_vcm(smilextract_bin_path=smilextract_bin_path, input_audio_path=input_audio_path,
+            input_rttm_path=input_rttm_path, output_vcm_path=output_vcm_path, all_children=all_children,
+            keep_other=keep_other, reuse_temp=reuse_temp, keep_temp=keep_temp, n_jobs=n_jobs)

@@ -70,8 +70,5 @@ if [[ -z $INPUT_AUDIO_PATH ]] | [[ -z $INPUT_RTTM_PATH ]] | [[ -z $SMILEXTRACT_B
   usage
 fi
 
-echo $RUN_PATH --input-audio-path $INPUT_AUDIO_PATH --input-rttm-path $INPUT_RTTM_PATH --smilextract-bin-path $SMILEXTRACT_BIN_PATH \
-                 $OUTPUT_VCM_PATH $ALL_CHILDREN $KEEP_OTHER $KEEP_TEMP $REUSE_TEMP
-
 python $RUN_PATH --input-audio-path $INPUT_AUDIO_PATH --input-rttm-path $INPUT_RTTM_PATH --smilextract-bin-path $SMILEXTRACT_BIN_PATH \
                  $OUTPUT_VCM_PATH $ALL_CHILDREN $KEEP_OTHER $KEEP_TEMP $REUSE_TEMP

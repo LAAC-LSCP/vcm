@@ -37,7 +37,8 @@ def predict_vcm(model, input, mean_var):
     feat = std(np.array(htk_reader.data))
     input = torch.from_numpy(feat.astype('float32'))
 
-    output_ling = model(input).data.data.cpu().numpy() # TODO: Check data.data ?
+    with torch.no_grad():
+        output_ling = model(input).data.data.cpu().numpy()
     prediction_confidence = output_ling.max()  # post propability
 
     cls_ling = np.argmax(output_ling)
@@ -45,8 +46,12 @@ def predict_vcm(model, input, mean_var):
 
     return predition_vcm, prediction_confidence
 
-def run_vcm(input_audio_path, input_rttm_path, output_vcm_path, opensmile_bin_path, mean_var, vcm_model,
-            all_children, keep_other, reuse_temp, keep_temp):
+def _run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_path,
+            all_children=False, keep_other=False, reuse_temp=False, keep_temp=False):
+
+    # Load VCM model
+    vcm_model = load_model(VCM_NET_MODEL_PATH)
+
     vcm_predictions = []
     input_rttm_data = read_text_file(input_rttm_path)
 
@@ -84,14 +89,14 @@ def run_vcm(input_audio_path, input_rttm_path, output_vcm_path, opensmile_bin_pa
             if not os.path.exists(temp_feature_path) or not reuse_temp:
                 feature_rc, feature_stdout, feature_stderr = extract_feature(temp_audio_path,
                                                                              temp_feature_path,
-                                                                             opensmile_bin_path)
-                assert feature_rc == 0, 'OpenSMILE returned a non-zero exit code!'
+                                                                             smilextract_bin_path)
+                assert feature_rc == 0, 'OpenSMILE SMILExtract returned a non-zero exit code!\n{}'.format(feature_stderr)
                 assert os.path.isfile(temp_feature_path), "Error: Feature file {} was " \
                                                           "not generated properly!".format(temp_feature_path)
 
             # Predict VCM
             try:
-                vcm_prediction, vcm_confidence = predict_vcm(vcm_model, temp_feature_path, mean_var)
+                vcm_prediction, vcm_confidence = predict_vcm(vcm_model, temp_feature_path, MEAN_VAR)
             except Exception as e:
                 exit("Error: Cannot proceed vcm prediction on: {}\n"
                      "Exception: {}".format(temp_audio_path, e))
@@ -113,13 +118,13 @@ def run_vcm(input_audio_path, input_rttm_path, output_vcm_path, opensmile_bin_pa
     # Dump predictions
     dump_text_file(output_vcm_path, vcm_predictions)
 
-def main(*args, keep_temp):
+def run_vcm(*args, keep_temp=False, **kwargs):
     # Create temporary directory in VCM directory
     os.makedirs(TMP_DIR, exist_ok=True)
     assert os.path.exists(TMP_DIR), 'Temporary directory {} not found.'.format(TMP_DIR)
 
     try:
-        run_vcm(*args, keep_temp)
+        _run_vcm(*args, keep_temp=keep_temp, **kwargs)
     except Exception as e:
         exit(e)
     finally:
@@ -133,10 +138,10 @@ def parse_arguments(argv):
                         help="Path to the audio file to be processed.")
     parser.add_argument("-r", "--input-rttm-path", required=True,
                         help="Path to the VTC output of the file to be processed.")
-    parser.add_argument("-o", "--opensmile-bin-path", required=True,
-                        help="Path to OpenSmile v2.3 binary.")
-    parser.add_argument("--output-vcm-path",
-                        help="Output path were the results of the VCM should be stored.")
+    parser.add_argument("-s", "--smilextract-bin-path", required=True,
+                        help="Path to smilextract SMILExtract (v2.3) binary.")
+    parser.add_argument("-o", "--output-vcm-path",
+                        help="Output path were the results of the VCM should be stored. Default: Same as RTTM file.")
     parser.add_argument("--all-children", action='store_true',
                         help="Should speech segment produced by other children than the key child (KCHI)"
                              "should be analysed. Default: False")
@@ -145,9 +150,9 @@ def parse_arguments(argv):
                              "output file. Segments from speaker-type SPEECH, MAL, FEM, etc.) will be kept."
                              "Default: False.")
     parser.add_argument("--keep-temp", action='store_true',
-                        help="Whether temporary file should be kept or not.")
+                        help="Whether temporary file should be kept or not. Default: False.")
     parser.add_argument("--reuse-temp", action='store_true',
-                        help="Whether temporary file should be reused instead of being recomputed.")
+                        help="Whether temporary file should be reused instead of being recomputed. Default: False.")
     args = parser.parse_args(argv)
     return args
 
@@ -158,7 +163,7 @@ if __name__ == '__main__':
 
     input_audio_path = args.input_audio_path
     input_rttm_path = args.input_rttm_path
-    opensmile_bin_path = args.opensmile_bin_path
+    smilextract_bin_path = args.smilextract_bin_path
     all_children = args.all_children
     keep_other = args.keep_other
     keep_temp = args.keep_temp
@@ -184,8 +189,5 @@ if __name__ == '__main__':
     assert os.path.isfile(MEAN_VAR), '{} not found (required by VCM model)'.format(MEAN_VAR)
     assert os.path.isfile(VCM_NET_MODEL_PATH), 'Pytorch model {} not found.'.format(VCM_NET_MODEL_PATH)
 
-    # Load VCM model (kept that here in case we want to specify path to model in the future)
-    vcm_net = load_model(VCM_NET_MODEL_PATH)
-
-    main(input_audio_path, input_rttm_path, output_vcm_path, opensmile_bin_path, MEAN_VAR, vcm_net,
-         all_children, keep_other, reuse_temp, keep_temp=keep_temp)
+    run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_path, all_children, keep_other,
+            reuse_temp, keep_temp=keep_temp)

@@ -55,6 +55,9 @@ class NetSyll(nn.Module):
         return F.softmax(x, dim=1)
 
 def load_model(path):
+    # Create model and load weights
     vcm_net = NetVCM(nInput=88, nHidden=1024, nOutput=4)
     vcm_net.load_state_dict(torch.load(path, map_location=lambda storage, loc: storage))
+    # Place model in evaluation mode
+    vcm_net.eval()
     return vcm_net

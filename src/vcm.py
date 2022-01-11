@@ -79,7 +79,10 @@ def _run_vcm_rttm(vcm_model, smilextract_bin_path, input_audio_path, input_rttm_
         file_name, onset, duration, speaker_type = line[1], line[3], line[4], line[7]
 
         # Do VCM prediction for children only
-        if CHI_PATTERN not in speaker_type: continue
+        if CHI_PATTERN not in speaker_type:
+            if keep_other:
+                vcm_predictions.append(SEP.join(line))
+            continue
 
         temp_audio_filename = '{}_{}_{}{}'.format(file_name, onset, duration, AUDIO_EXTENSION)
         temp_audio_path = os.path.join(TMP_DIR, temp_audio_filename)
@@ -133,11 +136,9 @@ def _run_vcm_rttm(vcm_model, smilextract_bin_path, input_audio_path, input_rttm_
             os.remove(temp_audio_path)
             os.remove(temp_feature_path)
 
-        if keep_other and CHI_PATTERN not in speaker_type:
-            vcm_predictions.append(SEP.join(line))
-
     assert not keep_other or len(input_rttm_data) == len(vcm_predictions), \
-        "Error: Size mismatch! Expected {}, got {}.".format(len(input_rttm_data), len(vcm_predictions))
+        "Error: Size mismatch for file {} (--keep-other={})" \
+        "! Expected {}, got {}.".format(file_name, keep_other, len(input_rttm_data), len(vcm_predictions))
 
     # Dump predictions
     dump_text_file(output_vcm_path, vcm_predictions)
@@ -195,7 +196,7 @@ def run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_
             args_dict.update(**kwargs) # Add missing keys in kwargs
             f = partial(_run_vcm_rttm_wrapper, **args_dict)
             errors = list(tqdm.tqdm(p.imap_unordered(f, rttmfile_list), total=len(rttmfile_list), position=0))
-            print('{} errors encountered. See log.'.format(sum(errors)))
+            if errors: print('{} errors encountered. See log.'.format(sum(errors)))
     # Remove temporary directory
     finally:
         if not keep_temp: shutil.rmtree(TMP_DIR, ignore_errors=True)

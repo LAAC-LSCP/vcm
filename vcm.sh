@@ -18,6 +18,7 @@ KEEP_OTHER=''
 KEEP_TEMP=''
 N_JOBS=''
 REUSE_TEMP=''
+SKIP_DONE=''
 
 # Arguments parser
 while [[ $# -gt 0 ]]; do
@@ -68,6 +69,10 @@ while [[ $# -gt 0 ]]; do
     REUSE_TEMP='--reuse-temp'
     shift # past argument
     ;;
+    --skip-done)
+    SKIP_DONE='--skip-done'
+    shift # past argument
+    ;;
     -h|--help)
     shift
     usage
@@ -84,4 +89,4 @@ if [[ -z $INPUT_AUDIO_PATH ]] | [[ -z $INPUT_RTTM_PATH ]] | [[ -z $SMILEXTRACT_B
 fi
 
 python $RUN_PATH --input-audio-path $INPUT_AUDIO_PATH --input-rttm-path $INPUT_RTTM_PATH --smilextract-bin-path $SMILEXTRACT_BIN_PATH \
-                 $OUTPUT_VCM_PATH $AUDIO_EXTENSION $ALL_CHILDREN $KEEP_OTHER $KEEP_TEMP $REUSE_TEMP $N_JOBS
+                 $OUTPUT_VCM_PATH $AUDIO_EXTENSION $ALL_CHILDREN $KEEP_OTHER $KEEP_TEMP $REUSE_TEMP $N_JOBS $SKIP_DONE

@@ -157,6 +157,10 @@ def run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_
     # Create temporary directory in VCM directory
     os.makedirs(TMP_DIR, exist_ok=True)
 
+    smilextract_bin_path = os.path.realpath(smilextract_bin_path)
+    input_audio_path = os.path.realpath(input_audio_path)
+    input_rttm_path = os.path.realpath(input_rttm_path)
+
     # Check that the configuration files/directories we need exist
     assert os.path.exists(TMP_DIR), 'Temporary directory {} not found.'.format(TMP_DIR)
     assert os.path.isfile(MEAN_VAR), '{} not found (required by VCM model)'.format(MEAN_VAR)

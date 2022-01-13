@@ -16,7 +16,7 @@ def _clean(feature_output_path):
         os.remove(feature_output_path)
 
 def get_raw_filename(path):
-    return os.path.splitext(os.path.basename(path))[0]
+    return os.path.splitext(os.path.basename(os.path.realpath(path)))[0]
 
 def read_text_file(input_path):
     with open(input_path) as file_in:
@@ -45,7 +45,7 @@ def find_all_files(path, extension=''):
 #
 
 def extract_feature(audio_input_path, feature_output_path, SMILEXTRACT_PATH):
-    config = os.path.join(os.path.dirname(__file__), '../config/gemaps/eGeMAPSv01a.conf')
+    config = os.path.realpath(os.path.join(os.path.dirname(__file__), '../config/gemaps/eGeMAPSv01a.conf'))
 
     cmd = f"{SMILEXTRACT_PATH} -C {config} -I {audio_input_path} -htkoutput {feature_output_path} -nologfile 1 >& /dev/null"
     command = cmd.split(' ')

@@ -141,7 +141,6 @@ def _run_vcm_rttm(vcm_model, smilextract_bin_path, input_audio_path, input_rttm_
         "! Expected {}, got {}.".format(file_name, keep_other, len(input_rttm_data), len(vcm_predictions))
 
     # Dump predictions
-    print(output_vcm_path)
     dump_text_file(output_vcm_path, vcm_predictions)
 
 def _run_vcm_rttm_wrapper(input_rttm_path, **kwargs):

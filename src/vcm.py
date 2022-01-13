@@ -141,13 +141,14 @@ def _run_vcm_rttm(vcm_model, smilextract_bin_path, input_audio_path, input_rttm_
         "! Expected {}, got {}.".format(file_name, keep_other, len(input_rttm_data), len(vcm_predictions))
 
     # Dump predictions
+    print(output_vcm_path)
     dump_text_file(output_vcm_path, vcm_predictions)
 
 def _run_vcm_rttm_wrapper(input_rttm_path, **kwargs):
     try:
         _run_vcm_rttm(input_rttm_path=input_rttm_path, **kwargs)
     except Exception as e:
-        log_fn = os.path.dirname(input_rttm_path).strip(os.sep).replace(os.sep, '-')
+        log_fn = os.path.dirname(os.path.realpath(input_rttm_path)).strip(os.sep).replace(os.sep, '-')
         with open('./log_{}.log'.format(log_fn), 'a+') as out_log_file:
             out_log_file.write('{}\n'.format(str(e)))
         return 1
@@ -180,9 +181,18 @@ def run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_
     else: # We should not be getting here
         raise Exception("--input-rttm-path is neither a file nor a directory.")
 
-    # Handle out directory/path: if the output directory does not exist: create it!
-    if output_vcm_path is not None and not os.path.exists(output_vcm_path):
-        os.makedirs(output_vcm_path, exist_ok=True)
+    # Handle out directory/file path: if the output directory does not exist: create it!
+    if output_vcm_path is not None:
+        output_vcm_path = os.path.realpath(output_vcm_path)
+        extension = os.path.splitext(output_vcm_path)[-1]
+        # User specified a directory
+        if extension == '' and not os.path.exists(output_vcm_path):
+            os.makedirs(output_vcm_path, exist_ok=True)
+        # User specified a path to a specific filename
+        if extension != '' and not os.path.exists(os.path.dirname(output_vcm_path)):
+            assert os.path.isfile(input_audio_path), \
+                'Error: Can only use specific output file name if there is only one audio file to be processed!'
+            os.makedirs(os.path.dirname(output_vcm_path), exist_ok=True)
 
     # Wrapped everything in a try/finally block to clear tmp_dir is something goes wrong
     try:

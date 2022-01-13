@@ -45,8 +45,8 @@ def test_vcm_output(smilextract_bin_path):
     test_audio_path = os.path.join(os.path.dirname(__file__), '../egs/example.wav')
     test_rttm_path = os.path.join(os.path.dirname(__file__), '../egs/example.rttm')
     test_out_path = os.path.join(os.path.dirname(__file__), '../egs/example.vcm')
-    run_vcm(smilextract_bin_path, test_audio_path, test_rttm_path, test_out_path,
-            all_children=False, keep_other=False, reuse_temp=False, keep_temp=False)
+    run_vcm(smilextract_bin_path, test_audio_path, test_rttm_path, test_out_path, keep_temp=False, n_jobs=1,
+            all_children=False, keep_other=False, reuse_temp=False, skip_done=False)
 
     assert os.path.isfile(test_out_path), 'VCM output file {} is missing!'.format(test_out_path)
 

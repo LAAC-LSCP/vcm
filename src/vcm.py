@@ -14,13 +14,14 @@ import tqdm
 
 from model import load_model, CLASS_NAMES
 from htk import HTKFile
-from utils import seg_audio, extract_feature, read_text_file, dump_text_file, find_all_files, get_raw_filename
+from utils import seg_audio, extract_feature, read_text_file, dump_text_file,\
+                  find_all_files, get_raw_filename, _write_log
 
 SEP = ' '
 AUDIO_EXTENSION = ".wav"
 LINE_PATTERN =  "SPEAKER {} 1 {} {} <NA> <NA> {} {:.2f} <NA>".replace(' ', SEP) # fn, onset, duration, vcm-class, conf
 
-TMP_DIR = os.path.join(os.path.dirname(__file__), '../tmp')
+TMP_DIR_ROOT = os.path.join(os.path.dirname(__file__), '../tmp')
 MEAN_VAR = os.path.join(os.path.dirname(__file__), '../config/vcm/vcm.eGeMAPS.func_utt.meanvar')
 VCM_NET_MODEL_PATH = os.path.join(os.path.dirname(__file__), '../config/model/vcm_model.pt')
 
@@ -51,7 +52,7 @@ def predict_vcm(model, input, mean_var):
     return predition_vcm, prediction_confidence
 
 def _run_vcm_rttm(vcm_model, smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_path,
-                  all_children, keep_other, reuse_temp, keep_temp, skip_done):
+                  all_children, keep_other, reuse_temp, keep_temp, skip_done, tmp_dir=TMP_DIR_ROOT):
     # Set up output filename
     if output_vcm_path is None:
         assert input_rttm_path.endswith('.rttm')
@@ -85,7 +86,7 @@ def _run_vcm_rttm(vcm_model, smilextract_bin_path, input_audio_path, input_rttm_
             continue
 
         temp_audio_filename = '{}_{}_{}{}'.format(file_name, onset, duration, AUDIO_EXTENSION)
-        temp_audio_path = os.path.join(TMP_DIR, temp_audio_filename)
+        temp_audio_path = os.path.normpath(os.path.join(tmp_dir, temp_audio_filename))
         temp_feature_path = temp_audio_path.replace(AUDIO_EXTENSION, '.htk') if AUDIO_EXTENSION != '' else \
                             temp_audio_path + '.htk'
 
@@ -147,22 +148,21 @@ def _run_vcm_rttm_wrapper(input_rttm_path, **kwargs):
     try:
         _run_vcm_rttm(input_rttm_path=input_rttm_path, **kwargs)
     except Exception as e:
-        log_fn = os.path.dirname(os.path.realpath(input_rttm_path)).strip(os.sep).replace(os.sep, '-')
-        with open('./log_{}.log'.format(log_fn), 'a+') as out_log_file:
-            out_log_file.write('{}\n'.format(str(e)))
-        return 1
+        return str(e)
     return 0
 
 def run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_path, keep_temp, n_jobs, **kwargs):
-    # Create temporary directory in VCM directory
-    os.makedirs(TMP_DIR, exist_ok=True)
+    smilextract_bin_path = os.path.normpath(smilextract_bin_path)
+    input_audio_path = os.path.normpath(input_audio_path)
+    input_rttm_path = os.path.normpath(input_rttm_path)
 
-    smilextract_bin_path = os.path.realpath(smilextract_bin_path)
-    input_audio_path = os.path.realpath(input_audio_path)
-    input_rttm_path = os.path.realpath(input_rttm_path)
+    # Create temporary directory in VCM directory
+    tmp_dir_suffix = input_rttm_path.strip(os.sep).replace(os.sep, '-').replace('.rttm','')
+    tmp_dir = os.path.join(TMP_DIR_ROOT, tmp_dir_suffix)
+    os.makedirs(tmp_dir, exist_ok=True)
 
     # Check that the configuration files/directories we need exist
-    assert os.path.exists(TMP_DIR), 'Temporary directory {} not found.'.format(TMP_DIR)
+    assert os.path.exists(tmp_dir), 'Temporary directory {} not found.'.format(tmp_dir)
     assert os.path.isfile(MEAN_VAR), '{} not found (required by VCM model)'.format(MEAN_VAR)
     assert os.path.isfile(VCM_NET_MODEL_PATH), 'Pytorch model {} not found.'.format(VCM_NET_MODEL_PATH)
     assert os.access(smilextract_bin_path, os.X_OK), 'Path to OpenSMILE SMILExtract ({}) ' \
@@ -186,7 +186,7 @@ def run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_
 
     # Handle out directory/file path: if the output directory does not exist: create it!
     if output_vcm_path is not None:
-        output_vcm_path = os.path.realpath(output_vcm_path)
+        output_vcm_path = os.path.normpath(output_vcm_path)
         extension = os.path.splitext(output_vcm_path)[-1]
         # User specified a directory
         if extension == '' and not os.path.exists(output_vcm_path):
@@ -205,14 +205,17 @@ def run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_
         # Multiprocessing (does not work with multiple progress bars)
         with Pool(n_jobs) as p:
             args_dict = dict(vcm_model=vcm_model, smilextract_bin_path=smilextract_bin_path,
-                        input_audio_path=audiofile_list, output_vcm_path=output_vcm_path, keep_temp=keep_temp)
+                        input_audio_path=audiofile_list, output_vcm_path=output_vcm_path, keep_temp=keep_temp,
+                        tmp_dir=tmp_dir)
             args_dict.update(**kwargs) # Add missing keys in kwargs
             f = partial(_run_vcm_rttm_wrapper, **args_dict)
             errors = list(tqdm.tqdm(p.imap_unordered(f, rttmfile_list), total=len(rttmfile_list), position=0))
-            if errors: print('{} errors encountered. See log.'.format(sum(errors)))
+            error_cnt =  len(list(filter(lambda e: type(e) == str, errors)))
+            if error_cnt:
+                print('{} errors encountered. See log @ {}.'.format(error_cnt, _write_log(errors, input_rttm_path)))
     # Remove temporary directory
     finally:
-        if not keep_temp: shutil.rmtree(TMP_DIR, ignore_errors=True)
+        if not keep_temp: shutil.rmtree(tmp_dir, ignore_errors=True)
 
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()

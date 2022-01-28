@@ -18,6 +18,7 @@ The original code was written in Python 2 and used an unknow version of Pytorch 
 
 * example.rttm was extracted using Marvin's VTC as packaged by ALICE
 * Feature extraction is done using OpenSMILE v2.3. Code was run and tested with the precompile version: [opensmile/bin)/**linux_x64_standalone_static**/](https://github.com/georgepar/opensmile/tree/master/bin/linux_x64_standalone_static)
+* *LSCP/LAAC specific*: To process RTTM files generated with [the batched version of the voice-type-classificier](https://github.com/lucasgautheron/batch-voice-type-classifier) use the following option `--from-batched-vtc`. 
 
 # References
 

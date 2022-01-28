@@ -52,7 +52,7 @@ def predict_vcm(model, input, mean_var):
     return predition_vcm, prediction_confidence
 
 def _run_vcm_rttm(vcm_model, smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_path,
-                  all_children, keep_other, reuse_temp, keep_temp, skip_done, tmp_dir=TMP_DIR_ROOT):
+                  all_children, keep_other, reuse_temp, keep_temp, skip_done, from_batched_vtc, tmp_dir=TMP_DIR_ROOT):
     # Set up output filename
     if output_vcm_path is None:
         assert input_rttm_path.endswith('.rttm')
@@ -93,9 +93,10 @@ def _run_vcm_rttm(vcm_model, smilextract_bin_path, input_audio_path, input_rttm_
         # If the number of keys is greater than one, then we are processing a directory for which we have listed
         # the audiofile. We only need find one that matches the filename specified in the RTTM file.
         if len(input_audio_path.keys()) > 1:
-            assert file_name in input_audio_path.keys(), \
-                'Error: audio file {} specified in RTTM {} not found!'.format(file_name, input_rttm_path)
-            final_input_audio_path = input_audio_path[file_name]
+            file_name_key = '_'.join(file_name.split('_')[1:]) if from_batched_vtc else file_name
+            assert file_name_key in input_audio_path.keys(), \
+                'Error: audio file {} specified in RTTM {} not found!'.format(file_name_key, input_rttm_path)
+            final_input_audio_path = input_audio_path[file_name_key]
         # Otherwise, the user wants to process a specific file with a specific RTTM, then the audio file is necessarily
         # the right one. Why do that? Because sometimes the filename in the RTTM file and the corresponding wavefile
         # is different
@@ -210,9 +211,9 @@ def run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_
             args_dict.update(**kwargs) # Add missing keys in kwargs
             f = partial(_run_vcm_rttm_wrapper, **args_dict)
             errors = list(tqdm.tqdm(p.imap_unordered(f, rttmfile_list), total=len(rttmfile_list), position=0))
-            error_cnt =  len(list(filter(lambda e: type(e) == str, errors)))
-            if error_cnt:
-                print('{} errors encountered. See log @ {}.'.format(error_cnt, _write_log(errors, input_rttm_path)))
+            errors_flt = list(filter(lambda e: type(e) == str, errors))
+            if errors_flt:
+                print('{} errors encountered. See log @ {}.'.format(len(errors_flt), _write_log(errors_flt, input_rttm_path)))
     # Remove temporary directory
     finally:
         if not keep_temp: shutil.rmtree(tmp_dir, ignore_errors=True)
@@ -233,17 +234,20 @@ def parse_arguments(argv):
                         help="Number of parallel jobs to run.")
     parser.add_argument("--all-children", action='store_true',
                         help="Should speech segment produced by other children than the key child (KCHI)"
-                             "should be analysed. Default: False")
+                             "should be analysed. (Default: False.)")
     parser.add_argument("--keep-other", action='store_true',
                         help="Should the VTC annotations for the other speakers should be transfered into the VCM"
-                             "output file. Segments from speaker-type SPEECH, MAL, FEM, etc.) will be kept."
-                             "Default: False.")
+                             "output file. Segments from speaker-type SPEECH, MAL, FEM, etc.) will be kept. "
+                             "(Default: False.)")
     parser.add_argument("--keep-temp", action='store_true',
-                        help="Whether temporary file should be kept or not. Default: False.")
+                        help="Whether temporary file should be kept or not. (Default: False.)")
     parser.add_argument("--reuse-temp", action='store_true',
-                        help="Whether temporary file should be reused instead of being recomputed. Default: False.")
+                        help="Whether temporary file should be reused instead of being recomputed. (Default: False.)")
     parser.add_argument("--skip-done", action='store_true',
-                        help="Whether RTTM for which a VCM file already exists should be skipped. Default: False.")
+                        help="Whether RTTM for which a VCM file already exists should be skipped. (Default: False.)")
+    parser.add_argument("--from-batched-vtc", action='store_true',
+                        help='Whether the VTC files were generated using LSCP/LAAC batch-voice-type-classifier or not.'
+                             '/!\ LSCP/LAAC specific, you shouldn\'t be needing this option. (Default: False.)')
     args = parser.parse_args(argv)
     return args
 

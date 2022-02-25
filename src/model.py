@@ -73,23 +73,33 @@ def predict_vcm(model, input, mean_var):
     # Read normalisation parameters
     assert os.path.exists(mean_var)
 
+    # Get scaler
     with open(mean_var, 'rb') as f:
         mv = pickle.load(f)
-
     m, v = mv['mean'], mv['var']
     std = lambda feat: (feat - m) / v
 
-    # Load input feature and predict
-    htk_reader = HTKFile()
-    htk_reader.load(input)
+    # Load input features
+    try:
+        htk_reader = HTKFile()
+        htk_reader.load(input)
+    except Exception as e:
+        exit('HTK file could not be read properly!')
 
+    # Scale input
     feat = std(np.array(htk_reader.data))
     input = torch.from_numpy(feat.astype('float32'))
 
+    # Do prediction
     with torch.no_grad():
-        output_ling = model(input).data.data.cpu().numpy()
-    prediction_confidence = output_ling.max()  # post propability
+        try:
+            output_ling = model(input).data.data.cpu().numpy()
+        except Exception as e:
+            exit("Error: Cannot proceed with VCM prediction for file {}\n"
+                 "Exception: {}".format(input, e))
 
+    # Get class and confidence
+    prediction_confidence = output_ling.max()  # post propability
     cls_ling = np.argmax(output_ling)
     predition_vcm = CLASS_NAMES[cls_ling]  # prediction
 

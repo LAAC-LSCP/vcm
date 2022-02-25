@@ -81,11 +81,8 @@ def _run_vcm_rttm(vcm_model, smilextract_bin_path, input_audio_path, input_rttm_
             extract_feature(temp_audio_path, temp_feature_path, smilextract_bin_path)
 
         # Predict VCM
-        try:
-            vcm_prediction, vcm_confidence = predict_vcm(vcm_model, temp_feature_path, MEAN_VAR)
-        except Exception as e:
-            exit("Error: Cannot proceed with VCM prediction for file {} on: {}\n"
-                 "Exception: {}".format(file_name, temp_audio_path, e))
+        vcm_prediction, vcm_confidence = predict_vcm(vcm_model, temp_feature_path, MEAN_VAR)
+
 
         # Append VCM prediction
         line = LINE_PATTERN.format(file_name, onset, duration, vcm_prediction, float(vcm_confidence))

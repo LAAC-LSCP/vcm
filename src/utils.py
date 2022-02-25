@@ -54,11 +54,12 @@ def _write_log(errors, path):
 
 def extract_feature(audio_input_path, feature_output_path, SMILEXTRACT_PATH):
     config = os.path.normpath(os.path.join(os.path.dirname(__file__), '../config/gemaps/eGeMAPSv01a.conf'))
-
-    cmd = f"{SMILEXTRACT_PATH} -C {config} -I {audio_input_path} -htkoutput {feature_output_path} -nologfile 1 >& /dev/null"
-    command = cmd.split(' ')
-
-    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    cmd = f"{SMILEXTRACT_PATH} " \
+          f"-C {config} " \
+          f"-I {audio_input_path} " \
+          f"-htkoutput {feature_output_path} " \
+          f"-nologfile 1".split(' ')
+    result = run(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
 
     return result.returncode, result.stdout, result.stderr
 

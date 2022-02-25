@@ -86,7 +86,7 @@ class HTKFile:
             if (paramKind & 0o100) != 0:
                 self.qualifiers.append("E")
             if (paramKind & 0o200) != 0:
-                qualifiers.append("N")
+                self.qualifiers.append("N")
             if (paramKind & 0o400) != 0:
                 self.qualifiers.append("D")
             if (paramKind & 0o1000) != 0:

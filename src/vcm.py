@@ -2,14 +2,11 @@ import os
 import sys
 import argparse
 import shutil
-import pickle
+
 from multiprocessing import Pool
 from multiprocessing import current_process
 from functools import partial
-from pprint import pprint
 
-import torch
-import numpy as np
 import tqdm
 
 from model import load_model, predict_vcm

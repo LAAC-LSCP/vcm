@@ -194,34 +194,42 @@ def run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_
 
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()
+    # Required arguments
     parser.add_argument("-a", "--input-audio-path", required=True,
                         help="Path to the audio file to be processed.")
     parser.add_argument("-r", "--input-rttm-path", required=True,
                         help="Path to the VTC output of the file to be processed.")
     parser.add_argument("-s", "--smilextract-bin-path", required=True,
                         help="Path to smilextract SMILExtract (v2.3) binary.")
-    parser.add_argument("-o", "--output-vcm-path",
+    # Optional arguments
+    parser.add_argument("-o", "--output-vcm-path", required=False,
                         help="Output path were the results of the VCM should be stored. Default: Same as RTTM file.")
-    parser.add_argument("-x", "--audio-extension", default='.wav',
+    parser.add_argument("-x", "--audio-extension", required=False, default='.wav',
                         help="Audio files file extension (no extension '' also accepted). Default: '.wav'")
-    parser.add_argument("-j", "-J", "--n-jobs", default=4, type=int,
-                        help="Number of parallel jobs to run.")
-    parser.add_argument("--all-children", action='store_true',
+    # Conf. VCM output
+    parser.add_argument("--all-children", action='store_true', required=False, default=False,
                         help="Should speech segment produced by other children than the key child (KCHI)"
                              "should be analysed. (Default: False.)")
-    parser.add_argument("--keep-other", action='store_true',
+    parser.add_argument("--keep-other", action='store_true', required=False, default=False,
                         help="Should the VTC annotations for the other speakers should be transfered into the VCM"
                              "output file. Segments from speaker-type SPEECH, MAL, FEM, etc.) will be kept. "
                              "(Default: False.)")
-    parser.add_argument("--keep-temp", action='store_true',
-                        help="Whether temporary file should be kept or not. (Default: False.)")
-    parser.add_argument("--reuse-temp", action='store_true',
-                        help="Whether temporary file should be reused instead of being recomputed. (Default: False.)")
-    parser.add_argument("--skip-done", action='store_true',
-                        help="Whether RTTM for which a VCM file already exists should be skipped. (Default: False.)")
-    parser.add_argument("--from-batched-vtc", action='store_true',
+    parser.add_argument("--from-batched-vtc", action='store_true', required=False, default=False,
                         help='Whether the VTC files were generated using LSCP/LAAC batch-voice-type-classifier or not.'
                              '/!\ LSCP/LAAC specific, you shouldn\'t be needing this option. (Default: False.)')
+    # Temporary directory
+    parser.add_argument("--keep-temp", action='store_true', required=False, default=False,
+                        help="Whether temporary file should be kept or not. (Default: False.)")
+    parser.add_argument("--reuse-temp", action='store_true', required=False, default=False,
+                        help="Whether temporary file should be reused instead of being recomputed. (Default: False.)")
+    parser.add_argument("--temp-dir", action='store', required=False, default=None,
+                        help="Set path to temporary directory. (Default: ).")
+    parser.add_argument("--skip-done", action='store_true', required=False, default=False,
+                        help="Whether RTTM for which a VCM file already exists should be skipped. (Default: False.)")
+    # Other conf
+    parser.add_argument("-j", "-J", "--n-jobs", required=False, default=4, type=int,
+                        help="Number of parallel jobs to run.")
+
     args = parser.parse_args(argv)
     return args
 

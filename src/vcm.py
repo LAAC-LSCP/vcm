@@ -126,7 +126,16 @@ def _run_vcm_rttm_wrapper(input_rttm_path, **kwargs):
         return str(e)
     return 0
 
-def run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_path, keep_temp, n_jobs, **kwargs):
+def run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path,
+            output_vcm_path = None, audio_extension = AUDIO_EXTENSION, keep_temp = False,
+            n_jobs = 4, temp_dir=None, **kwargs):
+
+    # Add dot to the audio extension if forgotten by the user
+    AUDIO_EXTENSION = audio_extension
+    if AUDIO_EXTENSION != '' and not AUDIO_EXTENSION.startswith('.'):
+        AUDIO_EXTENSION = '.' + AUDIO_EXTENSION
+
+    # Normalise paths
     smilextract_bin_path = os.path.normpath(smilextract_bin_path)
     input_audio_path = os.path.normpath(input_audio_path)
     input_rttm_path = os.path.normpath(input_rttm_path)

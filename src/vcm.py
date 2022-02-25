@@ -71,8 +71,7 @@ def _run_vcm_rttm(vcm_model, smilextract_bin_path, input_audio_path, input_rttm_
                 'Error: audio file {} specified in RTTM {} not found!'.format(file_name_key, input_rttm_path)
             final_input_audio_path = input_audio_path[file_name_key]
         # Otherwise, the user wants to process a specific file with a specific RTTM, then the audio file is necessarily
-        # the right one. Why do that? Because sometimes the filename in the RTTM file and the corresponding wavefile
-        # is different
+        # the right one.
         else:
             final_input_audio_path = input_audio_path[list(input_audio_path.keys())[0]]
 
@@ -186,12 +185,12 @@ def run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path,
                 'Error: Can only use specific output file name if there is only one audio file to be processed!'
             os.makedirs(os.path.dirname(output_vcm_path), exist_ok=True)
 
-    # Wrapped everything in a try/finally block to clear tmp_dir is something goes wrong
+    # Wrapped everything in a try/finally block to clear tmp_dir if something goes wrong
     try:
         # Load VCM model
         vcm_model = load_model(VCM_NET_MODEL_PATH)
 
-        # Multiprocessing (does not work with multiple progress bars)
+        # Multiprocessing
         with Pool(n_jobs) as p:
             args_dict = dict(vcm_model=vcm_model, smilextract_bin_path=smilextract_bin_path,
                         input_audio_path=audiofile_list, output_vcm_path=output_vcm_path, keep_temp=keep_temp,
@@ -201,10 +200,12 @@ def run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path,
             errors = list(tqdm.tqdm(p.imap_unordered(f, rttmfile_list), total=len(rttmfile_list), position=0))
             errors_flt = list(filter(lambda e: type(e) == str, errors))
             if errors_flt:
-                print('{} errors encountered. See log @ {}.'.format(len(errors_flt), _write_log(errors_flt, input_rttm_path)))
+                print('{} errors encountered. See log @ {}.'.format(len(errors_flt),
+                                                                    _write_log(errors_flt, input_rttm_path)))
     # Remove temporary directory
     finally:
-        if not keep_temp: shutil.rmtree(tmp_dir, ignore_errors=True)
+        if not keep_temp:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
 
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()
@@ -248,6 +249,7 @@ def parse_arguments(argv):
     return args
 
 if __name__ == '__main__':
+    # TODO: recreate input RTTM directory hierarchy when dumping VCM files
     # Get arguments
     argv = sys.argv[1:]
     args = parse_arguments(argv)

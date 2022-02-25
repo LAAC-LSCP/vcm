@@ -60,8 +60,14 @@ def extract_feature(audio_input_path, feature_output_path, SMILEXTRACT_PATH):
           f"-htkoutput {feature_output_path} " \
           f"-nologfile 1".split(' ')
     result = run(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    r_rc, r_stdout, r_stderr = result.returncode, result.stdout, result.stderr
 
-    return result.returncode, result.stdout, result.stderr
+    assert result.returncode == 0, 'OpenSMILE SMILExtract returned a non-zero ({}) ' \
+                                   'exit code for file {}!\n{}'.format(r_rc, audio_input_path, r_stderr)
+    assert os.path.isfile(feature_output_path), "Error: Feature file {} for file {} was " \
+                                                "not generated properly!".format(feature_output_path, audio_input_path)
+
+    return
 
 def seg_audio(input_audio, output_audio, onset, duration):
     # onset and duration should be values provided in SECONDS

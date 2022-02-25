@@ -78,13 +78,7 @@ def _run_vcm_rttm(vcm_model, smilextract_bin_path, input_audio_path, input_rttm_
 
         # Extract features
         if not os.path.exists(temp_feature_path) or not reuse_temp:
-            feature_rc, feature_stdout, feature_stderr = extract_feature(temp_audio_path,
-                                                                         temp_feature_path,
-                                                                         smilextract_bin_path)
-            assert feature_rc == 0, 'OpenSMILE SMILExtract returned a non-zero ' \
-                                    'exit code for file {}!\n{}'.format(file_name, feature_stderr)
-            assert os.path.isfile(temp_feature_path), "Error: Feature file {} for file {} was " \
-                                                      "not generated properly!".format(temp_feature_path, file_name)
+            extract_feature(temp_audio_path, temp_feature_path, smilextract_bin_path)
 
         # Predict VCM
         try:

@@ -20,7 +20,6 @@ SEP = ' '
 AUDIO_EXTENSION = ".wav"
 LINE_PATTERN =  "SPEAKER {} 1 {} {} <NA> <NA> {} {:.2f} <NA>".replace(' ', SEP) # fn, onset, duration, vcm-class, conf
 
-TMP_DIR_ROOT = os.path.join(os.path.dirname(__file__), '../tmp')
 MEAN_VAR = os.path.join(os.path.dirname(__file__), '../config/vcm/vcm.eGeMAPS.func_utt.meanvar')
 VCM_NET_MODEL_PATH = os.path.join(os.path.dirname(__file__), '../config/model/vcm_model.pt')
 
@@ -142,8 +141,14 @@ def run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path,
 
     # Create temporary directory in VCM directory
     tmp_dir_suffix = input_rttm_path.strip(os.sep).replace(os.sep, '-').replace('.rttm','')
-    tmp_dir = os.path.join(TMP_DIR_ROOT, tmp_dir_suffix)
-    os.makedirs(tmp_dir, exist_ok=True)
+    if temp_dir == None:
+        temp_dir = os.path.join(os.path.dirname(__file__), '../tmp')
+    tmp_dir = os.path.join(temp_dir, tmp_dir_suffix)
+    try:
+        os.makedirs(tmp_dir, exist_ok=True)
+    except:
+        raise IOError('Could not create temporary directory @ {}. '
+                      'Try setting another path with --temp-dir.'.format(temp_dir))
 
     # Check that the configuration files/directories we need exist
     assert os.path.exists(tmp_dir), 'Temporary directory {} not found.'.format(tmp_dir)

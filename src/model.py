@@ -66,10 +66,11 @@ def load_model(path):
     vcm_net.load_state_dict(torch.load(path, map_location=lambda storage, loc: storage))
     # Place model in evaluation mode
     vcm_net.eval()
+    vcm_net.to('cpu')
     return vcm_net
 
 
-def predict_vcm(model, input, mean_var):
+def predict_vcm(model, input, mean_var, device):
     # Read normalisation parameters
     assert os.path.exists(mean_var)
 
@@ -88,7 +89,7 @@ def predict_vcm(model, input, mean_var):
 
     # Scale input
     feat = std(np.array(htk_reader.data))
-    input = torch.from_numpy(feat.astype('float32'))
+    input = torch.from_numpy(feat.astype('float32')).to('cpu')
 
     # Do prediction
     with torch.no_grad():

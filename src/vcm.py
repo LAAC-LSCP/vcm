@@ -256,10 +256,4 @@ if __name__ == '__main__':
 
     # Get arguments as dict
     args_dict = vars(args)
-
-    # Add dot to the audio extension if forgotten by the user
-    AUDIO_EXTENSION = args_dict.pop('audio_extension')
-    if AUDIO_EXTENSION != '' and not AUDIO_EXTENSION.startswith('.'):
-        AUDIO_EXTENSION = '.' + AUDIO_EXTENSION
-
     run_vcm(**args_dict)

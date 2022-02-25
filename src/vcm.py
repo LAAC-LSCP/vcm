@@ -12,8 +12,7 @@ import torch
 import numpy as np
 import tqdm
 
-from model import load_model, CLASS_NAMES
-from htk import HTKFile
+from model import load_model, predict_vcm
 from utils import seg_audio, extract_feature, read_text_file, dump_text_file,\
                   find_all_files, get_raw_filename, _write_log
 
@@ -25,34 +24,9 @@ TMP_DIR_ROOT = os.path.join(os.path.dirname(__file__), '../tmp')
 MEAN_VAR = os.path.join(os.path.dirname(__file__), '../config/vcm/vcm.eGeMAPS.func_utt.meanvar')
 VCM_NET_MODEL_PATH = os.path.join(os.path.dirname(__file__), '../config/model/vcm_model.pt')
 
-def predict_vcm(model, input, mean_var):
-    # Read normalisation parameters
-    assert os.path.exists(mean_var)
-
-    with open(mean_var, 'rb') as f:
-        mv = pickle.load(f)
-
-    m, v = mv['mean'], mv['var']
-    std = lambda feat: (feat - m) / v
-
-    # Load input feature and predict
-    htk_reader = HTKFile()
-    htk_reader.load(input)
-
-    feat = std(np.array(htk_reader.data))
-    input = torch.from_numpy(feat.astype('float32'))
-
-    with torch.no_grad():
-        output_ling = model(input).data.data.cpu().numpy()
-    prediction_confidence = output_ling.max()  # post propability
-
-    cls_ling = np.argmax(output_ling)
-    predition_vcm = CLASS_NAMES[cls_ling]  # prediction
-
-    return predition_vcm, prediction_confidence
-
-def _run_vcm_rttm(vcm_model, smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_path,
-                  all_children, keep_other, reuse_temp, keep_temp, skip_done, from_batched_vtc, tmp_dir=TMP_DIR_ROOT):
+def _run_vcm_rttm(vcm_model, smilextract_bin_path, input_audio_path, input_rttm_path, output_vcm_path, tmp_dir,
+                  all_children = False, keep_other = False, reuse_temp = False, keep_temp = False,
+                  skip_done = False, from_batched_vtc = False):
     # Set up output filename
     if output_vcm_path is None:
         assert input_rttm_path.endswith('.rttm')

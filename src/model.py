@@ -1,7 +1,13 @@
+import os
+import pickle
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import PackedSequence
+import numpy as np
+
+from htk import HTKFile
 
 CLASS_NAMES = ['NCS', 'CNS', 'CRY', 'OTH']
 
@@ -61,3 +67,30 @@ def load_model(path):
     # Place model in evaluation mode
     vcm_net.eval()
     return vcm_net
+
+
+def predict_vcm(model, input, mean_var):
+    # Read normalisation parameters
+    assert os.path.exists(mean_var)
+
+    with open(mean_var, 'rb') as f:
+        mv = pickle.load(f)
+
+    m, v = mv['mean'], mv['var']
+    std = lambda feat: (feat - m) / v
+
+    # Load input feature and predict
+    htk_reader = HTKFile()
+    htk_reader.load(input)
+
+    feat = std(np.array(htk_reader.data))
+    input = torch.from_numpy(feat.astype('float32'))
+
+    with torch.no_grad():
+        output_ling = model(input).data.data.cpu().numpy()
+    prediction_confidence = output_ling.max()  # post propability
+
+    cls_ling = np.argmax(output_ling)
+    predition_vcm = CLASS_NAMES[cls_ling]  # prediction
+
+    return predition_vcm, prediction_confidence

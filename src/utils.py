@@ -65,5 +65,9 @@ def extract_feature(audio_input_path, feature_output_path, SMILEXTRACT_PATH):
 
 def seg_audio(input_audio, output_audio, onset, duration):
     # onset and duration should be values provided in SECONDS
-    wave_data, sr = librosa.load(input_audio, sr=None, offset=float(onset), duration=float(duration))
-    soundfile.write(output_audio, wave_data, sr)
+    try:
+        wave_data, sr = librosa.load(input_audio, sr=None, offset=float(onset), duration=float(duration))
+        soundfile.write(output_audio, wave_data, sr)
+    except Exception as e:
+        exit("Error: Cannot segment the audio {} (onset: {}, duration: {})\n"
+             "Full Exception: {}".format(input_audio, onset, duration, e))

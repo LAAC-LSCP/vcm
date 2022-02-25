@@ -73,13 +73,8 @@ def _run_vcm_rttm(vcm_model, smilextract_bin_path, input_audio_path, input_rttm_
             final_input_audio_path = input_audio_path[list(input_audio_path.keys())[0]]
 
         # Segment audio file
-        try:
-            if not os.path.exists(temp_audio_path) or not reuse_temp:
-                seg_audio(final_input_audio_path, temp_audio_path, onset, duration)
-        except Exception as e:
-            exit("Error: Cannot segment the audio {} for file {}"
-                  "(onset: {}, duration: {})\n"
-                 "Exception: {}".format(final_input_audio_path, file_name, onset, duration, e))
+        if not os.path.exists(temp_audio_path) or not reuse_temp:
+            seg_audio(final_input_audio_path, temp_audio_path, onset, duration)
 
         # Extract features
         if not os.path.exists(temp_feature_path) or not reuse_temp:

@@ -66,11 +66,11 @@ optional arguments:
                         should be transfered into the VCMoutput file. Segments
                         from speaker-type SPEECH, MAL, FEM, etc.) will be
                         kept. (Default: False.)
-  --keep-temp           Whether temporary file should be kept or not.
+  --keep-temp           Whether temporary files should be kept or not.
                         (Default: False.)
-  --reuse-temp          Whether temporary file should be reused instead of
+  --reuse-temp          Whether temporary files should be reused instead of
                         being recomputed. (Default: False.)
-  --skip-done           Whether RTTM for which a VCM file already exists
+  --skip-done           Whether RTTM files for which a VCM file already exists
                         should be skipped. (Default: False.)
   --from-batched-vtc    Whether the VTC files were generated using LSCP/LAAC
                         batch-voice-type-classifier or not./!\ LSCP/LAAC

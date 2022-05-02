@@ -1,5 +1,5 @@
-import subprocess
 import struct
+import subprocess
 
 
 def HCopy(conf, wav, htk):
@@ -55,29 +55,29 @@ class HTKFile:
                 self.nSamples, self.sampPeriod, sampSize, paramKind = struct.unpack(self.endian+"iihh", header)
             basicParameter = paramKind & 0x3F
 
-            if basicParameter is 0:
+            if basicParameter == 0:
                 self.basicKind = "WAVEFORM"
-            elif basicParameter is 1:
+            elif basicParameter == 1:
                 self.basicKind = "LPC"
-            elif basicParameter is 2:
+            elif basicParameter == 2:
                 self.basicKind = "LPREFC"
-            elif basicParameter is 3:
+            elif basicParameter == 3:
                 self.basicKind = "LPCEPSTRA"
-            elif basicParameter is 4:
+            elif basicParameter == 4:
                 self.basicKind = "LPDELCEP"
-            elif basicParameter is 5:
+            elif basicParameter == 5:
                 self.basicKind = "IREFC"
-            elif basicParameter is 6:
+            elif basicParameter == 6:
                 self.basicKind = "MFCC"
-            elif basicParameter is 7:
+            elif basicParameter == 7:
                 self.basicKind = "FBANK"
-            elif basicParameter is 8:
+            elif basicParameter == 8:
                 self.basicKind = "MELSPEC"
-            elif basicParameter is 9:
+            elif basicParameter == 9:
                 self.basicKind = "USER"
-            elif basicParameter is 10:
+            elif basicParameter == 10:
                 self.basicKind = "DISCRETE"
-            elif basicParameter is 11:
+            elif basicParameter == 11:
                 self.basicKind = "PLP"
             else:
                 self.basicKind = "ERROR"
@@ -104,7 +104,8 @@ class HTKFile:
             if (paramKind & 0o100000) != 0:
                 self.qualifiers.append("T")
 
-            if "C" in self.qualifiers or "V" in self.qualifiers or self.basicKind is "IREFC" or self.basicKind is "WAVEFORM":
+            if "C" in self.qualifiers or "V" in self.qualifiers or self.basicKind == "IREFC" or self.basicKind == \
+                    "WAVEFORM":
                 self.nFeatures = sampSize // 2
             else:
                 self.nFeatures = sampSize // 4
@@ -116,12 +117,12 @@ class HTKFile:
                 raise NotImplementedError("VQ is not implemented")
 
             self.data = []
-            if self.basicKind is "IREFC" or self.basicKind is "WAVEFORM":
+            if self.basicKind == "IREFC" or self.basicKind == "WAVEFORM":
                 for x in range(self.nSamples):
                     s = f.read(sampSize)
                     frame = []
                     for v in range(self.nFeatures):
-                        val = struct.unpack_from(self.endian+"h", s, v * 2)[0] / 32767.0
+                        val = struct.unpack_from(self.endian + "h", s, v * 2)[0] / 32767.0
                         frame.append(val)
                     self.data.append(frame)
             elif "C" in self.qualifiers:

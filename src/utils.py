@@ -57,10 +57,9 @@ def find_all_files(path, extension=''):
 
 def _write_log(errors, path):
     log_fn = 'log_{}.log'.format(os.path.dirname(os.path.normpath(path)).strip(os.sep).replace(os.sep, '-'))
-    log_path = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', log_fn))
-    with open(log_path, 'a+') as out_log_file:
+    with open(log_fn, 'a+') as out_log_file:
         out_log_file.write('\n'.join(errors))
-    return log_path
+    return log_fn
 
 #
 # VCM utility functions
@@ -80,7 +79,6 @@ def extract_feature(audio_input_path, feature_output_path, SMILEXTRACT_PATH):
                                    'exit code for file {}!\n{}'.format(r_rc, audio_input_path, r_stderr)
     assert os.path.isfile(feature_output_path), "Error: Feature file {} for file {} was " \
                                                 "not generated properly!".format(feature_output_path, audio_input_path)
-
     return
 
 def seg_audio(input_audio, output_audio, onset, duration):

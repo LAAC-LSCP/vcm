@@ -152,7 +152,7 @@ def run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path,
     elif os.path.isfile(input_rttm_path):  # Just one file
         rttmfile_list = [(input_rttm_path, '')]
     else:  # We should not be getting here
-        raise Exception("--input-rttm-path is neither a file nor a directory.")
+        raise Exception("File/Directory specified for --input-rttm-path does not exist.")
 
     # Handle out directory/file path: if the output directory does not exist: create it!
     if output_vcm_path is not None:

@@ -85,8 +85,9 @@ def predict_vcm(model, input, mean_var, device):
     try:
         htk_reader = HTKFile()
         htk_reader.load(input)
-    except IOError as e:
-        exit('HTK file could not be read properly! {}'.format(e))
+    except Exception as e:
+        raise type(e)('HTK file could not be read properly! '
+                      'Base Exception: {}'.format(e))
 
     # Scale input
     feat = scale(np.array(htk_reader.data))
@@ -97,8 +98,8 @@ def predict_vcm(model, input, mean_var, device):
         try:
             output_ling = model(input).data.data.cpu().numpy()
         except Exception as e:
-            exit("Error: Cannot proceed with VCM prediction for file {}\n"
-                 "Exception: {}".format(input, e))
+            raise type(e)("Error: Cannot proceed with VCM prediction for file {}\n"
+                          "Base Exception: {}".format(input, e))
 
     # Get class and confidence
     prediction_confidence = output_ling.max()  # post propability

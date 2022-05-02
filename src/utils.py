@@ -2,11 +2,18 @@
 # -*- coding: utf8 -*-
 
 import os
-import tqdm
 from subprocess import PIPE, run
+
 import librosa
 import soundfile
+import tqdm
 from tqdm import tqdm
+
+RTTM_SEP = ' '
+RTTM_LINE_PATTERN = "SPEAKER {} 1 {} {} <NA> <NA> {} {:.2f} <NA>".replace(' ',
+                                                                          RTTM_SEP)  # fn, onset, duration,
+# vcm-class, conf
+
 
 #
 # General utility functions
@@ -16,8 +23,15 @@ def _clean(feature_output_path):
     if os.path.isfile(feature_output_path):
         os.remove(feature_output_path)
 
+
 def get_raw_filename(path):
     return os.path.splitext(os.path.basename(os.path.normpath(path)))[0]
+
+
+def get_path_suffix(path_a, path_b):
+    path_a = os.path.split(path_a)[0]
+    return path_a.removeprefix(os.path.commonpath([path_a, path_b])).removeprefix('/')
+
 
 def read_text_file(input_path):
     with open(input_path) as file_in:

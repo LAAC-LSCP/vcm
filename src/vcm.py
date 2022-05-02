@@ -215,10 +215,10 @@ def _parse_arguments(argv):
 
     # Conf. VCM output
     parser.add_argument("--all-children", action='store_true', required=False, default=False,
-                        help="Should speech segment produced by other children than the key child (KCHI)"
-                             "should be analysed. (Default: False.)")
+                        help="Should speech segment produced by other children than the key child (KCHI) "
+                             "be analysed. (Default: False.)")
     parser.add_argument("--remove-others", action='store_true', required=False, default=False,
-                        help="Should the VTC annotations for the other speakers should be removed from the VCM"
+                        help="Should the VTC annotations for the other speakers be removed from the VCM"
                              "output file. If Segments from speaker-type SPEECH, MAL, FEM, etc. will be removed. "
                              "(Default: False.)")
     parser.add_argument("--from-batched-vtc", action='store_true', required=False, default=False,

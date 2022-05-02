@@ -78,17 +78,17 @@ def predict_vcm(model, input, mean_var, device):
     with open(mean_var, 'rb') as f:
         mv = pickle.load(f)
     m, v = mv['mean'], mv['var']
-    std = lambda feat: (feat - m) / v
+    scale = lambda feat: (feat - m) / v
 
     # Load input features
     try:
         htk_reader = HTKFile()
         htk_reader.load(input)
-    except Exception as e:
-        exit('HTK file could not be read properly!')
+    except IOError as e:
+        exit('HTK file could not be read properly! {}'.format(e))
 
     # Scale input
-    feat = std(np.array(htk_reader.data))
+    feat = scale(np.array(htk_reader.data))
     input = torch.from_numpy(feat.astype('float32')).to('cpu')
 
     # Do prediction

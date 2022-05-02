@@ -9,6 +9,7 @@ import numpy as np
 
 from htk import HTKFile
 
+# NCS = non-canonical syllable, CNS = canonical syllable, CRY = cry, OTH = laugh+junk
 CLASS_NAMES = ['NCS', 'CNS', 'CRY', 'OTH']
 
 class NetVCM(nn.Module):

@@ -1,7 +1,6 @@
-tst/
 __pycache__/
-*.pyc
-tmp/
 .pytest_cache/
-log*
 .idea/
+tmp/
+*.pyc
+log*

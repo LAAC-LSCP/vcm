@@ -4,10 +4,13 @@
 import os
 import textwrap
 
-import pytest
+import torch
 
-from vcm import run_vcm
-from utils import extract_feature, _clean
+torch.multiprocessing.set_start_method('spawn')
+
+from ..src.vcm import run_vcm
+from ..src.utils import extract_feature, _clean
+
 
 def test_feature_extraction(smilextract_bin_path):
     assert smilextract_bin_path is not None, "Missing OpenSMILE SMILExtract path! (--smilextract-bin-path option)"
@@ -20,11 +23,11 @@ def test_feature_extraction(smilextract_bin_path):
     assert os.path.isfile(smilextract_bin_path), 'OpenSMILE SMILExtract not found!'.format(smilextract_bin_path)
     assert os.path.isfile(test_file_path), 'Example file not found!'
 
-    feat_rc, feat_stdout, feat_stderr = extract_feature(test_file_path, feature_output_path, smilextract_bin_path)
+    extract_feature(test_file_path, feature_output_path, smilextract_bin_path)
 
-    assert feat_rc == 0, 'OpenSMILE SMILExtract returned a non-zero return code! Standard Error: {}'.format(feat_stderr)
     assert os.path.isfile(feature_output_path), 'Output feature file not found!'
     _clean(feature_output_path)
+
 
 def test_vcm_output(smilextract_bin_path):
     reference = textwrap.dedent("""\
@@ -45,8 +48,9 @@ def test_vcm_output(smilextract_bin_path):
     test_audio_path = os.path.join(os.path.dirname(__file__), '../egs/example.wav')
     test_rttm_path = os.path.join(os.path.dirname(__file__), '../egs/example.rttm')
     test_out_path = os.path.join(os.path.dirname(__file__), '../egs/example.vcm')
+
     run_vcm(smilextract_bin_path, test_audio_path, test_rttm_path, test_out_path, keep_temp=False, n_jobs=1,
-            all_children=False, keep_other=False, reuse_temp=False, skip_done=False)
+            all_children=False, remove_others=True, reuse_temp=False, skip_done=False)
 
     assert os.path.isfile(test_out_path), 'VCM output file {} is missing!'.format(test_out_path)
 

@@ -6,8 +6,8 @@ import torch
 import tqdm
 from torch.multiprocessing import Pool, current_process
 
-from model import load_model, predict_vcm
-from utils import RTTM_LINE_PATTERN, RTTM_SEP, _write_log, dump_text_file, extract_feature, find_all_files, \
+from .model import load_model, predict_vcm
+from .utils import RTTM_LINE_PATTERN, RTTM_SEP, _write_log, dump_text_file, extract_feature, find_all_files, \
     get_path_suffix, get_raw_filename, read_text_file, seg_audio
 
 MEAN_VAR_PATH = os.path.join(os.path.dirname(__file__), '../config/vcm/vcm.eGeMAPS.func_utt.meanvar')

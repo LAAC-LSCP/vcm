@@ -17,6 +17,7 @@ VCM_NET_MODEL_PATH = os.path.join(os.path.dirname(__file__), '../config/model/vc
 def _run_vcm_rttm(vcm_model, smilextract_bin_path, input_audio_path, input_rttm_path_w_suffix,
                   output_vcm_path, tmp_dir, audio_extension, all_children=False, remove_others=False,
                   reuse_temp=False, keep_temp=False, skip_done=False, from_batched_vtc=False):
+
     input_rttm_path, input_rttm_path_suffix = input_rttm_path_w_suffix
 
     # Set up output filename
@@ -108,6 +109,7 @@ def _run_vcm_rttm_wrapper(input_rttm_path, **kwargs):
 def run_vcm(smilextract_bin_path, input_audio_path, input_rttm_path,
             output_vcm_path=None, audio_extension='.wav', keep_temp=False,
             n_jobs=4, temp_dir=None, **kwargs):
+
     # Add dot to the audio extension if forgotten by the user
     if audio_extension != '' and not audio_extension.startswith('.'):
         audio_extension = '.' + audio_extension
@@ -201,25 +203,28 @@ def _parse_arguments(argv):
 
     # Required arguments
     parser.add_argument("-a", "--input-audio-path", required=True,
-                        help="Path to the audio file to be processed.")
+                        help="Path to the audio file to be processed.(Path to file or path to directory that will be "
+                             "recursively explored.)")
     parser.add_argument("-r", "--input-rttm-path", required=True,
-                        help="Path to the VTC output of the file to be processed.")
+                        help="Path to the VTC RTTM file to be processed. (Path to file or path to directory that will "
+                             "be"
+                             " recursively explored.)")
     parser.add_argument("-s", "--smilextract-bin-path", required=True,
-                        help="Path to smilextract SMILExtract (v2.3) binary.")
+                        help="Path to SMILExtract (v2.3) binary.")
 
     # Optional arguments
     parser.add_argument("-o", "--output-vcm-path", required=False,
-                        help="Output path were the results of the VCM should be stored. Default: Same as RTTM file.")
+                        help="Output path where the results of the VCM should be stored. (Default: Same as RTTM file.)")
     parser.add_argument("-x", "--audio-extension", required=False, default='.wav',
-                        help="Audio files file extension (no extension '' also accepted). Default: '.wav'")
+                        help="Audio file extension (no extension '' also accepted). (Default: '.wav')")
 
     # Conf. VCM output
     parser.add_argument("--all-children", action='store_true', required=False, default=False,
-                        help="Should speech segment produced by other children than the key child (KCHI) "
+                        help="Should speech segments produced by other children than the key child (KCHI) "
                              "be analysed. (Default: False.)")
     parser.add_argument("--remove-others", action='store_true', required=False, default=False,
-                        help="Should the VTC annotations for the other speakers be removed from the VCM"
-                             "output file. If Segments from speaker-type SPEECH, MAL, FEM, etc. will be removed. "
+                        help="Should VTC annotations for the other speakers be removed from the VCM "
+                             "output file. If so, segments from speaker-type SPEECH, MAL, FEM, etc. will be removed. "
                              "(Default: False.)")
     parser.add_argument("--from-batched-vtc", action='store_true', required=False, default=False,
                         help='Whether the VTC files were generated using LSCP/LAAC batch-voice-type-classifier or not.'
@@ -227,17 +232,18 @@ def _parse_arguments(argv):
 
     # Temporary directory
     parser.add_argument("--keep-temp", action='store_true', required=False, default=False,
-                        help="Whether temporary file should be kept or not. (Default: False.)")
+                        help="Whether temporary files should be kept or not. (Default: False.)")
     parser.add_argument("--reuse-temp", action='store_true', required=False, default=False,
-                        help="Whether temporary file should be reused instead of being recomputed. (Default: False.)")
+                        help="Whether temporary files should be reused instead of being recomputed. (Default: False.)")
     parser.add_argument("--temp-dir", action='store', required=False, default=None,
-                        help="Set path to temporary directory. (Default: `../tmp`).")
+                        help="Set path to temporary directory."
+                             "(Default: `{}`).".format(os.path.join(os.path.abspath(__file__), 'tmp')))
     parser.add_argument("--skip-done", action='store_true', required=False, default=False,
                         help="Whether RTTM for which a VCM file already exists should be skipped. (Default: False.)")
 
     # Multiprocessing configuration
     parser.add_argument("-j", "-J", "--n-jobs", required=False, default=4, type=int,
-                        help="Number of parallel jobs to run.")
+                        help="Number of parallel jobs to run. (Default: 4.)")
 
     args = parser.parse_args(argv)
     return args

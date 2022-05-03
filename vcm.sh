@@ -6,4 +6,9 @@ usage() {
     exit 1;
 }
 
+if [[ $# -eq 0 ]]; then
+  usage;
+  exit 1;
+fi
+
 python -um src.vcm $*

@@ -1,11 +1,10 @@
 import os
 import pickle
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.utils.rnn import PackedSequence
-import numpy as np
 
 from .htk import HTKFile
 
@@ -71,7 +70,7 @@ def load_model(path):
     return vcm_net
 
 
-def predict_vcm(model, input, mean_var, device):
+def predict_vcm(model, input, mean_var):
     # Read normalisation parameters
     assert os.path.exists(mean_var)
 

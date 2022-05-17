@@ -21,7 +21,7 @@ If you want to keep everything in a conda environment:
 ```
 conda create -p /my/environment/vcm pip
 conda activate /my/environment/vcm
-pip install -r requirements
+pip install -r requirements.txt
 ```
 You will need the SMILExtract binary file to run vcm, download it for example in you vcm directory:
 ```

@@ -21,7 +21,7 @@ If you want to keep everything in a conda environment:
 ```
 conda create -p /my/environment/vcm pip
 conda activate /my/environment/vcm
-pip install -r requirements
+pip install -r requirements.txt
 ```
 You will need the SMILExtract binary file to run vcm, download it for example in you vcm directory:
 ```
@@ -98,7 +98,7 @@ pytest tst --smilextract-bin-path=/scratch2/whavard/PACKAGES/opensmile/bin/linux
 ```
 
 The original code was written in Python 2 and used an unknown version of Pytorch (presumably 0.3.0). The code however
-runs seemlessly with Python 3.7 and Pytorch 1.6. `requirements.txt` is only given for reproducibility purposes, and
+runs seemlessly with Python 3.9 and Pytorch 1.11. `requirements.txt` is only given for reproducibility purposes, and
 packages with lower version numbers might work as well.
 
 ## Notes

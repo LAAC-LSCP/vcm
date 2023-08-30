@@ -227,8 +227,8 @@ def _parse_arguments(argv):
                              "output file. If so, segments from speaker-type SPEECH, MAL, FEM, etc. will be removed. "
                              "(Default: False.)")
     parser.add_argument("--from-batched-vtc", action='store_true', required=False, default=False,
-                        help='Whether the VTC files were generated using LSCP/LAAC batch-voice-type-classifier or not.'
-                             '/!\ LSCP/LAAC specific, you shouldn\'t be needing this option. (Default: False.)')
+                        help="Whether the VTC files were generated using LSCP/LAAC batch-voice-type-classifier or not."
+                             "/!\ LSCP/LAAC specific, you shouldn't be needing this option. (Default: False.)")
 
     # Temporary directory
     parser.add_argument("--keep-temp", action='store_true', required=False, default=False,

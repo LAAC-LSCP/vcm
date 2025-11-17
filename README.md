@@ -1,5 +1,11 @@
 # VCM
 
+> [!CAUTION]
+> This model has been deprecated and is no longer recommended for use.
+> Recommended Alternative: Please use the model developed by [Theo Zhang et al., presented at Interspeech 2025](https://www.isca-archive.org/interspeech_2025/zhang25r_interspeech.html). The implementation is available on GitHub at [arxaqapi/speech-maturity](https://github.com/arxaqapi/speech-maturity).
+
+---
+
 The original code to this VCM is to be found [here](https://github.com/srvk/vcm). 
 
 The code was cleaned and tested by William N. Havard (07&10/01/22).
